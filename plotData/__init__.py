@@ -146,9 +146,9 @@ class AnalogPlot(object):
         
         self.p2.setLabel('bottom', 'Frequency (Hz)')
         if self.analogData.display_voltage:
-            self.p2.setLabel('left', 'Amplitude spectrum (V)')
+            self.p2.setLabel('left', 'Amplitude (V)')
         else:
-            self.p2.setLabel('left', 'Amplitude spectrum')
+            self.p2.setLabel('left', 'Amplitude')
         
         self.curves2 = list()
         for i, val in enumerate(self.analogData.columns):
@@ -205,7 +205,7 @@ class AnalogPlot(object):
         for i, val in enumerate(self.analogData.columns):
             if val:
                 a = np.array(self.analogData.deques['c%d' % i])[self.sample_indicies]
-                self.analogData.deques['c%d_fft' % i] = np.absolute(np.fft.rfft(a))
+                self.analogData.deques['c%d_fft' % i] = np.abs(np.fft.rfft(a)) / np.size(a)
 
         # gives the spectrum in Hertz
         frequency = np.fft.rfftfreq(np.size(a), d = 1. / self.sample_rate)
