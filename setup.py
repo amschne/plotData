@@ -11,7 +11,7 @@ config = {
     'download_url': 'Where to download it.',
     'author_email': 'amschne@umich.edu',
     'version': '0.1',
-    'install_requires': ['nose'],
+    'install_requires': ['nose', 'pyserial', 'numpy', 'pyqtgraph'],
     'packages': ['plotData'],
     'scripts': [],
     'name': 'plotData'
