@@ -213,12 +213,11 @@ class AnalogPlot(object):
     
     def plot(self):
         curve_count = 0
-        full_t_array = (np.array(self.analogData.deques['mission_time']) /
-                        1000000.)
-        t_array = full_t_array[self.sample_indicies]
+        t_array = (np.array(self.analogData.deques['mission_time']) /
+                   1000000.)
         for i, val in enumerate(self.analogData.columns):
             if val:
-                curve = np.array(self.analogData.deques['c%d' % i])[self.sample_indicies]
+                curve = np.array(self.analogData.deques['c%d' % i])
                 if self.analogData.display_voltage:
                     curve = (self.analogData.Vref * curve) / self.maxVal
                 
@@ -237,21 +236,10 @@ class AnalogPlot(object):
                                   
                 curve_count += 1
                 
-            if self.analogData.function_mode and self.analogData.display_voltage:
-                if i==1:
-                    func_domain = curve
-                if i==2:
-                    func_val = curve
-                    time_elapsed = time.time()
-                    if time_elapsed > self.time_update_func:
-                        self.func_curve.setData(func_domain, func_val)
-                        self.time_update_func = time_elapsed + TIME_STEP
-    
-        if self.analogData.function_mode and not self.analogData.display_voltage:
+        if self.analogData.function_mode:
             time_elapsed = time.time()
             if time_elapsed > self.time_update_func:
-                self.func_curve.setData(self.analogData.deques['c1'],
-                                        self.analogData.deques['c2'])
+                self.plot_function_mode()
                 self.time_update_func = time_elapsed + TIME_STEP
                 
         if self.analogData.IV_curve:
@@ -259,6 +247,14 @@ class AnalogPlot(object):
             if time_elapsed > self.time_update_IV:
                 self.plot_IV_curve()
                 self.time_update_IV = time_elapsed + TIME_STEP
+    
+    def plot_function_mode(self):
+        func_input = np.array(self.analogData.deques['c1'])
+        func_output = np.array(self.analogData.deques['c2'])
+        if self.analogData.display_voltage:
+            func_input = (self.analogData.Vref * func_input) / self.maxVal
+            func_output = (self.analogData.Vref * func_output) / self.maxVal
+        self.func_curve.setData(func_input, func_output)   
     
     def plot_IV_curve(self):
         Vin = (self.analogData.Vref *
@@ -317,9 +313,10 @@ class AnalogPlot(object):
         self.sample_rate = sample_rate
         self.sample_indicies = subsample_indicies.astype(int)
         if irregular:
-            sys.stderr.write('Sample rate at %r Hz is irregular.  Subsampling '
-                             'data at %r Hz...\n' % (initial_sample_rate, 
-                                                     sample_rate))
+            isr_print = np.around(initial_sample_rate, 3)
+            sr_print = np.around(sample_rate, 3)
+            sys.stderr.write('Sample rate at %s Hz is irregular.  Subsampling '
+                             'data at %s Hz...\n' % (isr_print, sr_print))
                                                  
     def run_event_loop(self):
         # Open serial port
