@@ -10,6 +10,7 @@ import time
 
 import serial
 import numpy as np
+from scipy import signal
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
@@ -54,6 +55,9 @@ class AnalogData(object):
         self.columns = [args.c0, args.c1, args.c2, args.c3, args.c4, args.c5, 
                         args.c6, args.c7]
         self.num_columns = self.columns.count(True)
+        self.lowpass = args.lowpass
+        self.highpass = args.highpass
+        self.butter_rank = args.butter_rank
         
         deques = dict()
         for i, val in enumerate(self.columns):
@@ -205,6 +209,12 @@ class AnalogPlot(object):
         for i, val in enumerate(self.analogData.columns):
             if val:
                 a = np.array(self.analogData.deques['c%d' % i])[self.sample_indicies]
+                if self.analogData.lowpass is not None:
+                    a = signal.filtfilt(self.b_low, self.a_low, a)
+                    self.analogData.deques['c%d' % i] = deque(a)
+                if self.analogData.highpass is not None:
+                    a = signal.filtfilt(self.b_high, self.a_high, a)
+                    self.analogData.deques['c%d' % i] = deque(a)                
                 self.analogData.deques['c%d_fft' % i] = np.abs(np.fft.rfft(a)) / np.size(a)
 
         # gives the spectrum in Hertz
@@ -317,6 +327,16 @@ class AnalogPlot(object):
             sr_print = np.around(sample_rate, 3)
             sys.stderr.write('Sample rate at %s Hz is irregular.  Subsampling '
                              'data at %s Hz...\n' % (isr_print, sr_print))
+                             
+        if self.analogData.lowpass is not None:
+            Wn = (2. * self.analogData.lowpass) / self.sample_rate
+            self.b_low, self.a_low = signal.butter(self.analogData.butter_rank,
+                                                   Wn, btype='lowpass')
+        if self.analogData.highpass is not None:
+            Wn = (2. * self.analogData.highpass) / self.sample_rate
+            (self.b_high,
+             self.a_high) = signal.butter(self.analogData.butter_rank, Wn,
+                                           btype='highpass')
                                                  
     def run_event_loop(self):
         # Open serial port
@@ -400,6 +420,9 @@ def get_args():
                         'on log scale.')
     parser.add_argument('--logy', action='store_true', help='Plot amplitude '
                         'on log scale.')
+    parser.add_argument('--lowpass', type=float, default=None)
+    parser.add_argument('--highpass', type=float, default=None)
+    parser.add_argument('--butter_rank', type=int, default=4)
     parser.add_argument('--noDFT', action='store_true')
     parser.add_argument('--noPrint', action='store_true')
     #parser.add_argument('--c0', action='store_true')
